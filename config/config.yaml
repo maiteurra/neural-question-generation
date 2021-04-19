@@ -1,0 +1,73 @@
+debug: false                                                  # if true execute in debug mode
+seed: 42                                                      # random seed
+device: 'cuda'                                                # device ['cpu', 'cuda']
+
+training:
+        train: true                                           # if true train model
+        from_checkpoint: ''                                   # load model from checkpoint path
+        max_epochs: 15                                        # number of epochs to train
+        batch_size: 1                                         # batch size
+        grad_cum: 32                                          # number of batches to cumulate grad
+        auto_lr: false                                        # automatically find lr
+        lr: 2e-5                                              # learning rate
+        optimizer: 'adam'                                     # optimizer ['adam']
+        model_checkpoint:
+            dirpath: 'checkpoints'                            # directory path to save model checkpoints
+            filename: '{epoch}-{val_loss:.2f}'                # filename to save model checkpoint
+            monitor: 'val_loss'                               # quantity to monitor. By default it is None which saves a checkpoint only for the last epoch
+            save_last: false                                  # always saves the model at the end of the epoch if true
+            save_top_k: 1                                     # save best k models according to quantity monitored int, -1 save all
+        early_stopping:
+            early_stop: true                                  # if true do early_stopping
+            monitor: 'val_loss'                               # quantity to be monitored
+            patience: 2                                       # number of epochs with no improvement
+            mode: 'min'                                       # min: stop when quantity stops decreasing, max: stop when quantity stops increasing
+
+testing:
+    test: true                                                # if true test model
+    model_path: 'checkpoints/model'                           # if not training provide model path
+    predictions_path: 'predictions.txt'                       # file to print predictions
+    target_path: 'target.txt'                                 # file to print target
+    results_path: 'results.txt'                               # file to print results
+    evaluation_path: 'evaluation_metrics.txt'                 # file to print evaluation metrics results
+    num_beams: 3                                              # number of beams for decoding
+    max_length_generation: 50                                 # maximum length of the generated output
+
+model:
+    name: 'bart'                                              # model name options: 'bart', 'bert_classification', 'bert_classification+bart', 'bert_sum'
+    classifier_path: '2021-02-15/16-11-41/checkpoints/epoch=6-val_loss=0.28.ckpt'  # classifier model checkpoint path in models
+    generator_path: '2021-02-09/20-55-53/checkpoints/epoch=3-val_loss=1.41.ckpt'   # generator model checkpoint path in models
+    dataset: false                                            # generate dataset with predicted supporting facts
+    data_augmentation: false                                  # do data augmentation if generating dataset
+    threshold: 0.9609                                         # threshold for bert-sf-clf
+
+dataset:
+    name: 'hotpot_qa'
+    preprocessing:
+        from_disk: true                                       # load already preprocessed dataset from disk
+        path: ''                                              # if given dataset is loaded from this path
+        splits: [ 'train', 'validation' ]                     # splits to select from the original dataset ['train', 'validation']
+        combine: false                                        # combine available splits before randomly splitting
+        shuffle: true                                         # shuffle dataset before splitting into train-val-test
+        val_split: 0.1                                        # validation split percentage
+        test_split: 0.1                                       # test split percentage
+    setup:
+        from_disk: true                                       # load already preprocessed and setup dataset from disk
+        save_to_disk: true                                    # save setup dataset in disk
+        question_types: [ 'comparison', 'bridge' ]            # question types to select from the dataset ['comparison', 'bridge']
+        difficulty_levels: [ 'easy', 'medium', 'hard' ]       # question difficulty types to select from the dataset ['easy', 'medium', 'hard']
+        answer: true                                          # add the answer to the model input
+        context: false                                        # use context if true, else use supporting facts
+        max_length_input_sf: 100                              # maximum length of the tokenized supporting fact
+        max_length_input_sentence: 70                         # maximum length of the tokenized sentence
+        max_length_input_context: 1536                        # maximum length of the tokenized context
+        max_length_target: 50                                 # maximum length of the tokenized target
+        max_sentence_context: 60                              # maximum number of sentences in context
+
+
+
+hydra:
+    run:
+        dir: ../outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}       # directory for execution logs
+    sweep:
+        dir: ../outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}       # directory for multirun execution logs
